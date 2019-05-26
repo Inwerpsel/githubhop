@@ -1,3 +1,62 @@
+function getComposerFiles (username, repository, branch, callback) {
+    let cacheTag = username + repository + branch
+
+    if (cacheTag in composerCache) {
+        cache = composerCache[cacheTag]
+        console.log('got json from cache: ' + cacheTag)
+        callback(cache.jsonJson, cache.lockJson)
+        return
+    }
+
+    let jsonRawUrl = `https://raw.githubusercontent.com/${username}/${repository}/${branch}/composer.json`
+    let lockRawUrl = `https://raw.githubusercontent.com/${username}/${repository}/${branch}/composer.lock`
+
+    let jsonJson
+    let lockJson
+
+    console.log('fetching composer.json from github raw: ' + jsonRawUrl)
+    let jsonRequest = new XMLHttpRequest();
+    jsonRequest.open("GET", jsonRawUrl, true); // true for asynchronous 
+    jsonRequest.onload = function (e) {
+        console.log('fetched url: ' + jsonRawUrl)
+        if (jsonRequest.responseText === '404: Not Found\n') {
+            console.log('No composer.json file found at ' + jsonRawUrl)
+
+            composerCache[cacheTag] = {jsonJson: null, lockJson: null}
+
+            return
+        }
+        jsonJson = JSON.parse(jsonRequest.responseText)
+
+        lockRequest = new XMLHttpRequest();
+        lockRequest.open('GET', lockRawUrl, true);
+        lockRequest.onload = function (e) {
+            if (lockRequest.responseText === '404: Not Found\n') {
+                console.log('No composer.lock file found at ' + lockRawUrl)
+                composerCache[cacheTag] = {jsonJson: jsonJson, lockJson: null}
+                return callback(jsonJson, null)
+            }
+
+            lockJson = JSON.parse(lockRequest.responseText)
+            // TODO: Probably better to not store the entire json in cache, but only the parts needed
+            composerCache[cacheTag] = {jsonJson: jsonJson,lockJson: lockJson}
+            callback(jsonJson, lockJson)
+        }
+        lockRequest.send(null)
+
+    }
+    jsonRequest.send(null)
+}
+
+function getFilenameFromFqcn(fqdn, ns) {
+    console.log(fqdn, ns)
+    fileOnly = fqdn.replace(ns, '')
+    withForwardSlashes = fileOnly.replace(/\\/g, '\/',)
+    console.log(withForwardSlashes)
+
+    return withForwardSlashes + '.php'
+}
+
 // Search for a page to go to when a recognized import is clicked
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
@@ -13,6 +72,7 @@ chrome.runtime.onMessage.addListener(
             let url
             let folder
 
+            // if 
             if (lockJson) {
                 console.log(jsonJson)
                 console.log(lockJson)
@@ -66,7 +126,7 @@ chrome.runtime.onMessage.addListener(
                 }
 
                 if (filename) {
-                    url = `https://github.com/${request.username}/${request.repository}/blob/master/${folder}/${filename}`
+                    url = `https://github.com/${request.username}/${request.repository}/blob/filename/${folder}/${filename}`
                 }
             }
 
@@ -76,66 +136,7 @@ chrome.runtime.onMessage.addListener(
                 console.log('no url could be found')
             }
         })
-
-
     }
 );
 
 let composerCache = {}
-
-function getComposerFiles (username, repository, branch, callback) {
-    let cacheTag = username + repository + branch
-
-    if (cacheTag in composerCache) {
-        cache = composerCache[cacheTag]
-        console.log('got json from cache: ' + cacheTag)
-        callback(cache.jsonJson, cache.lockJson)
-        return
-    }
-
-    let jsonRawUrl = `https://raw.githubusercontent.com/${username}/${repository}/${branch}/composer.json`
-    let lockRawUrl = `https://raw.githubusercontent.com/${username}/${repository}/${branch}/composer.lock`
-
-    let jsonJson
-    let lockJson
-
-    console.log('fetching composer.json from github raw: ' + jsonRawUrl)
-    let jsonRequest = new XMLHttpRequest();
-    jsonRequest.open("GET", jsonRawUrl, true); // true for asynchronous 
-    jsonRequest.onload = function (e) {
-        console.log('fetched url: ' + jsonRawUrl)
-        if (jsonRequest.responseText === '404: Not Found\n') {
-            console.log('No composer file found at ' + jsonRawUrl)
-
-            composerCache[cacheTag] = {jsonJson: null, lockJson: null}
-
-            return
-        }
-        jsonJson = JSON.parse(jsonRequest.responseText)
-
-        lockRequest = new XMLHttpRequest();
-        lockRequest.open('GET', lockRawUrl, true);
-        lockRequest.onload = function (e) {
-            if (lockRequest.responseText === '404: Not Found\n') {
-                composerCache[cacheTag] = {jsonJson: jsonJson, lockJson: null}
-                return callback(jsonJson, null)
-            }
-
-            lockJson = JSON.parse(lockRequest.responseText)
-            composerCache[cacheTag] = {jsonJson: jsonJson,lockJson: lockJson}
-            callback(jsonJson, lockJson)
-        }
-        lockRequest.send(null)
-
-    }
-    jsonRequest.send(null)
-}
-
-function getFilenameFromFqcn(fqdn, ns) {
-    console.log(fqdn, ns)
-    fileOnly = fqdn.replace(ns, '')
-    withForwardSlashes = fileOnly.replace(/\\/g, '\/',)
-    console.log(withForwardSlashes)
-
-    return withForwardSlashes + '.php'
-}
