@@ -72,10 +72,7 @@ chrome.runtime.onMessage.addListener(
             let url
             let folder
 
-            // if 
             if (lockJson) {
-                console.log(jsonJson)
-                console.log(lockJson)
                 let allPackages = [ ...lockJson.packages, ...lockJson['packages-dev'] ];
                 allPackages.forEach( (package) => {
                     if (
