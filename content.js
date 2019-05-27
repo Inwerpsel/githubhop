@@ -5,6 +5,10 @@ class Import {
     }
 }
 
+function extensionIsSupported(extension) {
+    return ['php'].indexOf(extension) != -1
+}
+
 let imports
 let username
 let repository
@@ -12,7 +16,7 @@ let branch
 let filename
 
 window.onload = function () {
-    let regex = /^https:\/\/github\.com\/([\w-_]+)\/([\w-_]+)\/blob\/([\w-_\.]+)\/(.*\.php)/
+    let regex = /^https:\/\/github\.com\/([\w-_]+)\/([\w-_]+)\/blob\/([\w-_\.]+)\/(.+\.(\w+))/
 
     let matches = window.location.href.match(regex)
 
@@ -23,7 +27,14 @@ window.onload = function () {
     username = matches[1]
     repository = matches[2]
     branch = matches[3]
-    filename = matchMedia[4]
+    filename = matches[4]
+    extension = matches[5]
+
+    if (!extensionIsSupported(extension)) {
+        console.log(`Detected a file but extension "${extension}" is not supported.`)
+
+        return
+    }
 
     let possibleImportContainers = [...document.querySelectorAll('.js-file-line-container span > span')]
     let allSpanSpans = [...document.querySelectorAll('.js-file-line-container span > span')]
@@ -66,7 +77,6 @@ window.onload = function () {
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        console.log(sender.tab ? "from a content script:" + sender.tab.url : "from the extension");
         if (request.message !== "package_manager_cache_ready") {
             return
         }
