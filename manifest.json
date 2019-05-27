@@ -11,10 +11,13 @@
       }
     ],
     "permissions": [
-      "tabs"
+      "tabs",
+      "storage"
     ],
     "background": {
-      "scripts": ["background.js"],
+      "scripts": [
+        "background.js"
+      ],
       "persistent": false
     }
   }
