@@ -50,14 +50,13 @@ window.onload = function () {
     }
 
     imports.forEach( (anImport) => {
-        anImport.containerElement.setAttribute('title', 'nav available')
+        anImport.containerElement.setAttribute('title', 'Click to search for source file.')
 
-        anImport.containerElement.style.cursor = 'pointer !important';
+        anImport.containerElement.style.cursor = 'pointer';
   
-        // Add listener for middle click to search files
+        // Add listener for click to search files
         anImport.containerElement.addEventListener('click', (event) => {
             console.log(event)
-            // if (event.)
             chrome.runtime.sendMessage({
                 "message": "import_clicked", 
                 "fqcn": anImport.fqcn,

@@ -125,8 +125,6 @@ chrome.runtime.onMessage.addListener(
                 }
 
                 if (filename) {
-                    console.log(filename)
-                    console.log(folder)
                     url = `https://github.com/${request.username}/${request.repository}/blob/master/${folder.replace(/\/$/, '')}/${filename}`
                 }
             }
