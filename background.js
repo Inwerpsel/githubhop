@@ -1,3 +1,5 @@
+let composerCache = {}
+
 function getComposerFiles (username, repository, branch, callback) {
     let cacheTag = username + repository + branch
 
@@ -49,11 +51,10 @@ function getComposerFiles (username, repository, branch, callback) {
 }
 
 function getFilenameFromFqcn(fqdn, ns) {
-    console.log(fqdn, ns)
     fileOnly = fqdn.replace(ns, '')
     withForwardSlashes = fileOnly.replace(/\\/g, '\/',)
-    console.log(withForwardSlashes)
 
+    withoutLeadingSlash = withForwardSlashes.replace(/^\//, '')
     return withForwardSlashes + '.php'
 }
 
@@ -88,6 +89,7 @@ chrome.runtime.onMessage.addListener(
 
                             folder = package.autoload['psr-4'][packageNs]
                             filename = getFilenameFromFqcn(request.fqcn, packageNs)
+                            // perhaps we could determine the branch or tag for the package as well
                             let baseUrl = package.source.url.replace(/\.git$/, '')
                             url = `${baseUrl}/blob/master/${folder}/${filename}`
                         }
@@ -107,7 +109,7 @@ chrome.runtime.onMessage.addListener(
                             }
                         })
                     }
-                    if ('psr-4' in jsonJson['autoload-dev']) {
+                    if ('autoload-dev' in jsonJson && 'psr-4' in jsonJson['autoload-dev']) {
                         Object.keys(jsonJson['autoload-dev']['psr-4']).forEach( (ns) => {
                             if (request.fqcn.startsWith(ns)) {
                                 folder = jsonJson['autoload-dev'][ns]
@@ -123,17 +125,17 @@ chrome.runtime.onMessage.addListener(
                 }
 
                 if (filename) {
-                    url = `https://github.com/${request.username}/${request.repository}/blob/filename/${folder}/${filename}`
+                    console.log(filename)
+                    console.log(folder)
+                    url = `https://github.com/${request.username}/${request.repository}/blob/master/${folder.replace(/\/$/, '')}/${filename}`
                 }
             }
 
-            if (url) {
-                chrome.tabs.create({"url": url});
-            } else {
-                console.log('no url could be found')
+            if (!url) {
+                url = `https://www.google.be/search?q=${request.fqcn}`
             }
+
+            chrome.tabs.create({"url": url});
         })
     }
 );
-
-let composerCache = {}

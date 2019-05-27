@@ -7,9 +7,9 @@ class Import {
 }
 
 window.onload = function () {
-    let regex = /^https:\/\/github\.com\/([\w-_]+)\/([\w-_]+)\/blob\/([\w-_]+)\/(.*\.php)/
+    let regex = /^https:\/\/github\.com\/([\w-_]+)\/([\w-_]+)\/blob\/([\w-_\.]+)\/(.*\.php)/
 
-    matches = window.location.href.match(regex)
+    let matches = window.location.href.match(regex)
 
     if (matches === null) {
         return
@@ -52,10 +52,12 @@ window.onload = function () {
     imports.forEach( (anImport) => {
         anImport.containerElement.setAttribute('title', 'nav available')
 
-        anImport.containerElement.style.cursor = 'pointer';
+        anImport.containerElement.style.cursor = 'pointer !important';
   
         // Add listener for middle click to search files
         anImport.containerElement.addEventListener('click', (event) => {
+            console.log(event)
+            // if (event.)
             chrome.runtime.sendMessage({
                 "message": "import_clicked", 
                 "fqcn": anImport.fqcn,
