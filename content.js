@@ -3,8 +3,8 @@ class Import {
         this.fqcn = fqcn;
         this.domElement = domElement;
     }
-
 }
+
 let imports
 let username
 let repository
