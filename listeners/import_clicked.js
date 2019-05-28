@@ -1,3 +1,39 @@
+// Search for a page to go to when a recognized import is clicked
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if ( request.message !== 'import_clicked' ) {
+            return;
+        }
+
+        // Get composer.json
+        let cacheTag = createCacheTag(request.username, request.repository, request.branch)
+
+        chrome.storage.local.get(cacheTag, (data) => {
+            let cacheEntry = data[cacheTag]
+            console.log(cacheEntry)
+
+            if (typeof cacheEntry === 'undefined') {
+                console.log(`No cache entry found for ${cacheTag}`)
+
+                return
+            }
+
+            let url = lookupUrlForFqcn(
+                request.fqcn,
+                cacheEntry.configJson,
+                cacheEntry.lockJson,
+                request.username,
+                request.repository,
+                request.branch
+            )
+
+            chrome.tabs.create({"url": url});
+        })
+
+        sendResponse({})
+    }
+
+);
 
 function getFilenameFromFqcn(fqcn, ns, standard) {
     let location = fqcn
@@ -150,41 +186,3 @@ function lookupUrlForFqcn(
 
     return url
 }
-
-
-// Search for a page to go to when a recognized import is clicked
-chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-        if ( request.message !== 'import_clicked' ) {
-            return;
-        }
-
-        // Get composer.json
-        let cacheTag = createCacheTag(request.username, request.repository, request.branch)
-
-        chrome.storage.local.get(cacheTag, (data) => {
-            let cacheEntry = data[cacheTag]
-            console.log(cacheEntry)
-
-            if (typeof cacheEntry === 'undefined') {
-                console.log(`No cache entry found for ${cacheTag}`)
-
-                return
-            }
-
-            let url = lookupUrlForFqcn(
-                request.fqcn,
-                cacheEntry.configJson,
-                cacheEntry.lockJson,
-                request.username,
-                request.repository,
-                request.branch
-            )
-
-            chrome.tabs.create({"url": url});
-        })
-
-        sendResponse({})
-    }
-
-);
