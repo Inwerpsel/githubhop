@@ -6,7 +6,9 @@ class Import {
 }
 
 function extensionIsSupported(extension) {
-    return ['php'].indexOf(extension) != -1
+    return [
+        'php'
+    ].indexOf(extension) !== -1
 }
 
 let imports
@@ -37,7 +39,6 @@ window.onload = function () {
     }
 
     let possibleImportContainers = [...document.querySelectorAll('.js-file-line-container span > span')]
-    let allSpanSpans = [...document.querySelectorAll('.js-file-line-container span > span')]
 
     // for now let not handle the case that the class is in the current namespace
     // let currentFileNamespace = possibleImportContainers.find( span => span.innerHTML === 'namespace').nextElementSibling.innerHTML
@@ -87,7 +88,6 @@ chrome.runtime.onMessage.addListener(
     
             // Add listener for click to search files
             anImport.domElement.addEventListener('click', (event) => {
-                console.log(event)
                 chrome.runtime.sendMessage({
                     "message": "import_clicked", 
                     "fqcn": anImport.fqcn,

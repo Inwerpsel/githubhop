@@ -16,7 +16,9 @@
     ],
     "background": {
       "scripts": [
-        "background.js"
+        "listeners/functions.js",
+        "listeners/import_clicked.js",
+        "listeners/imports_found.js"
       ],
       "persistent": false
     }
