@@ -166,9 +166,9 @@ function lookupUrlForFqcn(
         }
     }
 
-    // Apparently people do this to have the autoloader look in multiple places,
-    // but I don't won't to go in the effort to support that so we'll only check the first one (assuming that
-    // the author was sensible enough to put the main folder as first)
+    // Apparently you can have an array as the value to have the autoloader look in multiple places,
+    // but I don't won't to go in the effort to support that, so we'll only check the first one (assuming that
+    // the author was sensible enough to put the main folder first)
     if (Array.isArray(folder)) {
         folder = folder[0]
     }

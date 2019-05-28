@@ -11,11 +11,13 @@ function extensionIsSupported(extension) {
     ].indexOf(extension) !== -1
 }
 
-let imports
+let nameSpacedImports
+let globalImports
 let username
 let repository
 let branch
 let filename
+let extension
 
 window.onload = function () {
     let regex = /^https:\/\/github\.com\/([\w-_]+)\/([\w-_]+)\/blob\/([\w-_\.]+)\/(.+\.(\w+))/
@@ -43,33 +45,52 @@ window.onload = function () {
     // for now let not handle the case that the class is in the current namespace
     // let currentFileNamespace = possibleImportContainers.find( span => span.innerHTML === 'namespace').nextElementSibling.innerHTML
 
-    imports = possibleImportContainers.reduce( (result, span) => {
+    let result = possibleImportContainers.reduce( (result, span) => {
         // php specific for now
         if (span.textContent !== 'use') {
+
             return result;
         }
 
+        // we will assume that
+        // if the next sibling of this element looks like a namespace
+        // then we have an import (should catch most cases)
         let fqcn = span.nextElementSibling.innerHTML;
-        // for now do nothing with global classes or use functions
-        if (!fqcn.includes('\\')) {
+
+        if (!fqcn.match(/^\w+(\\\w+)*$/g)) {
+
             return result;
         }
 
         // get container of full import statement
         let domElement = span.parentNode;
 
-        result.push(new Import(fqcn, domElement));
+        let parts = fqcn.split('\\')
+
+        let anImport = new Import(fqcn, domElement)
+
+        if (parts.length === 1) {
+            result.globalImports.push(anImport)
+        } else {
+            result.namespacedImports.push(anImport);
+        }
 
         return result;
-    }, []);
+    }, {
+        globalImports: [],
+        namespacedImports: []
+    });
 
-    if (imports.length === 0) {
+    globalImports = result.globalImports
+    nameSpacedImports = result.namespacedImports
+
+    if (nameSpacedImports.length === 0) {
         return;
     }
 
     chrome.runtime.sendMessage({
         "message": "imports_found", 
-        "imports": imports,
+        "imports": nameSpacedImports,
         "username": username,
         "repository": repository,
         "branch": branch
@@ -82,9 +103,9 @@ chrome.runtime.onMessage.addListener(
             return
         }
 
-        imports.forEach( (anImport) => {
+        nameSpacedImports.forEach( (anImport) => {
             anImport.domElement.setAttribute('title', `Click to search for source file for ${anImport.fqcn}.`)
-            anImport.domElement.style.cursor = 'pointer';
+            anImport.domElement.style.cursor = 'pointer'
     
             // Add listener for click to search files
             anImport.domElement.addEventListener('click', (event) => {
@@ -96,7 +117,17 @@ chrome.runtime.onMessage.addListener(
                     "branch": branch
                 })
             })
-        
         })
+
+        globalImports.forEach( (anImport) => {
+            let phpDocUrl = `https://www.php.net/manual/en/class.${anImport.fqcn.toLowerCase()}.php`
+            anImport.domElement.setAttribute('title', `Global import, click to go to ${phpDocUrl}`)
+            anImport.domElement.style.cursor = 'pointer'
+
+            anImport.domElement.addEventListener('click', (event) => {
+                window.open(phpDocUrl)
+            })
+        })
+
         sendResponse({})
     });
