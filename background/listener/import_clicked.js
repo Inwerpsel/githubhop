@@ -112,7 +112,7 @@ function lookupUrlForFqcn(
                 folder = `/${matchingPackage.folder.replace(/^\//, '')}`
             }
 
-            return `${githubUrl}/blob/master${folder}/${filename}`
+            return `${githubUrl}/blob/master${folder}/${filename}#blob-path`
         }
 
         console.log('No package found in lock json.')
@@ -178,10 +178,10 @@ function lookupUrlForFqcn(
         if (location.length > 0) {
             location = '/' + location
         }
-        url = `https://github.com/${username}/${repository}/blob/${referencingBranch}${location}/${filename}`
+        url = `https://github.com/${username}/${repository}/blob/${referencingBranch}${location}/${filename}#blob-path`
     } else {
         // class also not found locally, just google it then
-        url = `https://www.google.be/search?q=${fqcn}`
+        url = `https://www.google.be/search?q=github ${fqcn}`
     }
 
     return url

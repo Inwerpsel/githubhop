@@ -18,6 +18,8 @@ chrome.runtime.onMessage.addListener( (request, sender, sendResponse) => {
 
             chrome.tabs.sendMessage(sender.tab.id, {message: "package_manager_cache_ready"}, function(response) {});
 
+            sendResponse({})
+
             return
         }
 

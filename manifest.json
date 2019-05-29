@@ -7,7 +7,15 @@
         "matches": [
           "<all_urls>"
         ],
-        "js": ["content.js"]
+        "js": [
+          "content/listener/cache_ready.js",
+          "content/CodeKeyword.js",
+          "content/CodeLine.js",
+          "content/Import.js",
+          "content/ImportUsage.js",
+          "content/SourceFile.js",
+          "content/window.onload.js"
+        ]
       }
     ],
     "permissions": [
@@ -16,9 +24,10 @@
     ],
     "background": {
       "scripts": [
-        "listeners/functions.js",
-        "listeners/import_clicked.js",
-        "listeners/imports_found.js"
+        "background/functions.js",
+        "background/listener/global_import_clicked.js",
+        "background/listener/import_clicked.js",
+        "background/listener/imports_found.js"
       ],
       "persistent": false
     }
