@@ -20,6 +20,7 @@ chrome.runtime.onMessage.addListener(
 
             let url = lookupUrlForFqcn(
                 request.fqcn,
+                request.isNamespaceImport,
                 cacheEntry.configJson,
                 cacheEntry.lockJson,
                 request.username,
@@ -35,26 +36,31 @@ chrome.runtime.onMessage.addListener(
 
 );
 
-function getFilenameFromFqcn(fqcn, ns, standard) {
+function getFilenameFromFqcn(fqcn, vendorNamespace, standard, isNamespaceImport) {
     let location = fqcn
     // remove trailing slash
     if (standard === 'psr-4') {
         // remove the namespace from the start of the fully qualified class name
-        let nsEscaped = ns.replace(/$\\/, '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
-        let removeNsRegex = new RegExp(`^${nsEscaped}`)
+        let vendorNamespaceEscaped = vendorNamespace.replace(/$\\/, '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+        let removeVendorNsRegex = new RegExp(`^${vendorNamespaceEscaped}`)
 
-        location = location.replace(removeNsRegex, '')
+        location = location.replace(removeVendorNsRegex, '')
     }
 
 
     // replace the separator
     let withForwardSlashes = location.replace(/\\/g, '\/',)
 
-    return withForwardSlashes + '.php'
+    if (!isNamespaceImport) {
+        withForwardSlashes += '.php'
+    }
+
+    return withForwardSlashes
 }
 
 function lookupUrlForFqcn(
     fqcn,
+    isNameSpaceImport,
     configJson,
     lockJson,
     username,
@@ -103,7 +109,7 @@ function lookupUrlForFqcn(
         let matchingPackage = supportedPackages.find(vendorPackage => fqcn.startsWith(vendorPackage.namespace))
 
         if (typeof matchingPackage !== 'undefined') {
-            let filename = getFilenameFromFqcn(fqcn, matchingPackage.namespace, matchingPackage.standard)
+            let filename = getFilenameFromFqcn(fqcn, matchingPackage.namespace, matchingPackage.standard, isNameSpaceImport)
             let githubUrl = matchingPackage.repositoryUrl.replace(/\.git$/, '')
             let folder = ''
 
@@ -124,7 +130,7 @@ function lookupUrlForFqcn(
         // still have a shot if there are no files
         let defaultNamespace = '\\App'
         folder = 'src'
-        filename = getFilenameFromFqcn(fqcn, defaultNamespace)
+        filename = getFilenameFromFqcn(fqcn, defaultNamespace, 'psr-4', isNameSpaceImport)
     } else {
         if ('autoload' in configJson) {
             if ('psr-4' in configJson.autoload) {
@@ -132,7 +138,7 @@ function lookupUrlForFqcn(
                     console.log(ns)
                     if (fqcn.startsWith(ns)) {
                         folder = configJson.autoload['psr-4'][ns]
-                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-4')
+                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-4', isNameSpaceImport)
                     }
                 })
             }
@@ -140,7 +146,7 @@ function lookupUrlForFqcn(
                 Object.keys(configJson['autoload']['psr-0']).forEach((ns) => {
                     if (fqcn.startsWith(ns)) {
                         folder = configJson['autoload']['psr-0'][ns]
-                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-0')
+                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-0', isNameSpaceImport)
                     }
                 })
             }
@@ -151,7 +157,7 @@ function lookupUrlForFqcn(
                 Object.keys(configJson['autoload-dev']['psr-4']).forEach((ns) => {
                     if (fqcn.startsWith(ns)) {
                         folder = configJson['autoload-dev']['psr-4'][ns]
-                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-4')
+                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-4', isNameSpaceImport)
                     }
                 })
             }
@@ -159,7 +165,7 @@ function lookupUrlForFqcn(
                 Object.keys(configJson['autoload-dev']['psr-0']).forEach((ns) => {
                     if (fqcn.startsWith(ns)) {
                         folder = configJson['autoload-dev']['psr-0'][ns]
-                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-0')
+                        filename = getFilenameFromFqcn(fqcn, ns, 'psr-0', isNameSpaceImport)
                     }
                 })
             }

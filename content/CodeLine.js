@@ -1,9 +1,8 @@
 class CodeLine {
     constructor(number, domElement, keywords) {
-        this.number = number
+        this.number = parseInt(number)
         this.domElement = domElement
         this.keywords = keywords
-        this.importKeyword = keywords.filter( keyword => keyword.isImportKeyword)
     }
 
     static getAllFromDocument(document) {

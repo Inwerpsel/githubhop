@@ -1,6 +1,6 @@
 let sourceFile
 
-window.onload = function () {
+(function () {
     try {
         sourceFile = SourceFile.fromUrlAndDocument(window.location.href, document)
     } catch (error) {
@@ -26,31 +26,16 @@ window.onload = function () {
         })
     }
 
-    sourceFile.imports.forEach( (anImport) => {
+    let longestImportRight = sourceFile.imports.reduce((biggestRight, anImport) => {
+        let importRight = anImport.target.domElement.getBoundingClientRect().right
+        return Math.max(importRight, biggestRight)
+    }, 0)
+
+    let lastImportLineNumber = sourceFile.imports[sourceFile.imports.length - 1].line.number
+
+    sourceFile.imports.forEach((anImport) => {
         // Search code for occurrences
-        let usages = sourceFile.lines.reduce( (result, line) => {
-            if (line === anImport.line) {
-                return result
-            }
-
-            let matchingKeywords = line.keywords.filter(
-                keyword => keyword.text === anImport.getClass()
-            )
-
-            let lineUsages = matchingKeywords.map(keyword => {
-                return new ImportUsage(
-                    line,
-                    keyword
-                )
-            })
-
-            if (lineUsages.length > 0) {
-                result.push(...lineUsages)
-            }
-
-            return result
-        }, [])
-
-        anImport.setUsages(usages)
+        anImport.fetchUsages(sourceFile.lines, lastImportLineNumber)
+        anImport.generateUsagesPopup(longestImportRight)
     })
-}
+})()

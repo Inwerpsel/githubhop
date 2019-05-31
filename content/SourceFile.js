@@ -37,19 +37,7 @@ class SourceFile {
 
         let lines = CodeLine.getAllFromDocument(document)
 
-        let imports = lines.reduce( (result, line) => {
-            let lineImports = line.keywords
-                .filter(keyword => keyword.isImportKeyword)
-                .map(keyword => new Import(keyword.target.text, line, keyword, keyword.target))
-
-            console.log(lineImports)
-
-            if (lineImports.length > 0) {
-                result.push(...lineImports)
-            }
-
-            return result;
-        }, [])
+        let imports = Import.getAllFromLines(lines)
 
         return new SourceFile(
             username,
@@ -64,6 +52,6 @@ class SourceFile {
     static extensionIsSupported(extension) {
         return [
             'php'
-        ].indexOf(extension) !== -1
+        ].includes(extension)
     }
 }

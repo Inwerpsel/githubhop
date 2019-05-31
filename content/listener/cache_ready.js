@@ -21,6 +21,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 chrome.runtime.sendMessage({
                     message: 'import_clicked',
                     fqcn: fileImport.fqcn,
+                    isNamespaceImport: fileImport.isNamespaceImport,
                     username: sourceFile.username,
                     repository: sourceFile.repository,
                     branch: sourceFile.branch
@@ -28,7 +29,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         }
 
-        fileImport.target.domElement.setAttribute('title', title)
         fileImport.target.domElement.style.cursor = 'pointer'
         fileImport.target.domElement.addEventListener('mouseup', (event) => {
             if (event.which === 2 || event.which === 1) {
