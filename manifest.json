@@ -9,11 +9,13 @@
         ],
         "js": [
           "content/listener/cache_ready.js",
-          "content/CodeKeyword.js",
+          "content/CodeSymbol.js",
           "content/CodeLine.js",
           "content/Import.js",
           "content/ImportUsage.js",
+          "content/InlineImport.js",
           "content/SourceFile.js",
+          "content/Subimport.js",
           "content/window.onload.js"
         ]
       }
@@ -26,6 +28,7 @@
       "scripts": [
         "background/functions.js",
         "background/listener/global_import_clicked.js",
+        "background/listener/ambiguous_inline_import_clicked.js",
         "background/listener/import_clicked.js",
         "background/listener/imports_found.js"
       ],

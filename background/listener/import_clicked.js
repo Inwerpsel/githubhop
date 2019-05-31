@@ -17,10 +17,12 @@ chrome.runtime.onMessage.addListener(
 
                 return
             }
+            let isNamespaceImport = request.isNamespaceImport
+                && (!request.isClassImport || !request.preferClassImport)
 
             let url = lookupUrlForFqcn(
                 request.fqcn,
-                request.isNamespaceImport,
+                isNamespaceImport,
                 cacheEntry.configJson,
                 cacheEntry.lockJson,
                 request.username,

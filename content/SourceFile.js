@@ -30,7 +30,7 @@ class SourceFile {
         let filename = matches[4]
         let extension = matches[5]
 
-        if (!SourceFile.extensionIsSupported(extension)) {
+        if (!SourceFile.supportsExtension(extension)) {
             console.log(`Detected a source file on github but extension "${extension}" is not supported.`)
             throw "extension not supported"
         }
@@ -49,9 +49,36 @@ class SourceFile {
         )
     }
 
-    static extensionIsSupported(extension) {
+    static supportsExtension(extension) {
         return [
             'php'
         ].includes(extension)
+    }
+
+    getLinesAfterLastImport() {
+        let lastImport = this.imports[sourceFile.imports.length - 1]
+
+        return this.lines.filter(
+            line => line.number > lastImport.line.number
+        )
+    }
+
+    fetchImportUsages() {
+        if (this.imports.length === 0) {
+            return
+        }
+
+        let longestImportRight = this.imports.reduce(
+            (biggestRight, anImport) => Math.max(anImport.targetSymbol.domElement.getBoundingClientRect().right, biggestRight),
+            0
+        )
+
+        let lastImportLineNumber = this.imports[sourceFile.imports.length - 1].line.number
+
+        this.imports.forEach((anImport) => {
+            // Search code for occurrences
+            anImport.fetchUsagesAndSubImports(sourceFile, lastImportLineNumber)
+            anImport.generateUsagesPopup(longestImportRight)
+        })
     }
 }

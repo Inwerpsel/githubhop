@@ -17,25 +17,16 @@ let sourceFile
         }
     }
 
-    if (sourceFile.imports.length > 0) {
-        chrome.runtime.sendMessage({
-            "message": "imports_found",
-            "username": sourceFile.username,
-            "repository": sourceFile.repository,
-            "branch": sourceFile.branch
-        })
+    if (sourceFile.imports.length === 0) {
+        return
     }
 
-    let longestImportRight = sourceFile.imports.reduce((biggestRight, anImport) => {
-        let importRight = anImport.target.domElement.getBoundingClientRect().right
-        return Math.max(importRight, biggestRight)
-    }, 0)
-
-    let lastImportLineNumber = sourceFile.imports[sourceFile.imports.length - 1].line.number
-
-    sourceFile.imports.forEach((anImport) => {
-        // Search code for occurrences
-        anImport.fetchUsages(sourceFile.lines, lastImportLineNumber)
-        anImport.generateUsagesPopup(longestImportRight)
+    chrome.runtime.sendMessage({
+        "message": "imports_found",
+        "username": sourceFile.username,
+        "repository": sourceFile.repository,
+        "branch": sourceFile.branch
     })
+
+    sourceFile.fetchImportUsages()
 })()

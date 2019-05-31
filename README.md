@@ -14,3 +14,4 @@ TODO:
 - detect usages in phpdoc
 - supported grouped imports
 - support use function
+- configurable mouse buttons for navigation

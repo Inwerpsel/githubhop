@@ -1,6 +1,7 @@
 class ImportUsage {
-    constructor(line, keyword) {
+    constructor(line, symbol) {
         this.line = line
-        this.keyword = keyword
+        this.symbol = symbol
     }
+
 }

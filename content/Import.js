@@ -1,33 +1,36 @@
 class Import {
-    constructor(fqcn, line, keyword, target) {
+    constructor(fqcn, line, symbol, targetSymbol) {
         this.fqcn = fqcn // string
         this.line = line // CodeLine
-        this.keyword = keyword // Keyword
-        this.target = target // Keyword
+        this.symbol = symbol
+        this.targetSymbol = targetSymbol
 
-        this.fqcnParts = fqcn.split('\\') // []
+        this.usages = null
+        this.subImports = null
+
+        this.fqcnParts = targetSymbol.namespaceParts
         this.isFromGlobalNamespace = this.fqcnParts.length === 1
         // when importing a namespace instead of a class
         // will be set to true once this is detected from the usages
         this.isNamespaceImport = false
+        this.isClassImport = false
         this.usagesPopup = null
         this.lockPopup = false
     }
 
-    static fromLineAndKeyword(line, keyword) {
+    static fromLineAndSymbol(line, symbol) {
         return new Import(
-            keyword.target.text,
+            symbol.targetSymbol.text,
             line,
-            keyword,
-            keyword.target
+            symbol,
+            symbol.targetSymbol
         )
     }
 
     static getAllFromLines(lines) {
         return lines.reduce((result, line) => {
-            let lineImports = line.keywords
-                .filter(keyword => keyword.isImportKeyword)
-                .map(keyword => Import.fromLineAndKeyword(line, keyword))
+            let importSymbols = line.symbols.filter(symbol => symbol.isImport)
+            let lineImports = importSymbols.map(symbol => Import.fromLineAndSymbol(line, symbol))
 
             result.push(...lineImports)
 
@@ -35,39 +38,74 @@ class Import {
         }, [])
     }
 
-    fetchUsages(codeLines, lastImportLineNumber) {
-        this.usages = codeLines
-            .filter(line => line.number > lastImportLineNumber)
-            .reduce((result, line) => {
-                let lineUsages = line.keywords.reverse().reduce((result, keyword) => {
-                    let namespaceParts = keyword.text.split('\\')
+    fetchUsagesAndSubImports(sourceFile) {
+        let linesAfterLastImport = sourceFile.getLinesAfterLastImport()
 
-                    // check if previous element is namespace
-                    if (
-                        this.getClass() === namespaceParts[0]
-                        && result.previousKeyword
-                        && !result.previousKeyword.domElement.innerHTML.match(/\w\\$/)
-                    ) {
+        let {usages, subImports} = linesAfterLastImport.reduce((result, line) => {
+            let lineResult = this.findUsagesAndSubImportsInLine(line)
 
-                        if (namespaceParts.length > 1) {
-                            this.isNamespaceImport = true
-                        }
+            result.usages.push(...lineResult.usages)
+            result.subImports.push(...lineResult.subImports)
 
-                        result.usages.push(new ImportUsage(line, keyword))
+            return result
+        }, {
+            usages: [],
+            subImports: []
+        })
+
+        this.usages = usages
+        this.subImports = subImports
+    }
+
+    findUsagesAndSubImportsInLine(line) {
+        let lineSymbols = line.symbols
+
+        return lineSymbols.reduce((result, symbol, index) => {
+            let namespaceParts = symbol.namespaceParts
+
+            // check if previous element is namespace
+            if (
+                this.getClass() === namespaceParts[0]
+                && typeof lineSymbols[index + 1] !== 'undefined'
+                && !lineSymbols[index + 1].isFolder
+            ) {
+                let nextSymbol = lineSymbols[index - 1]
+
+                if (typeof nextSymbol !== 'undefined' && (nextSymbol.isClassName || nextSymbol.isFolder)) {
+                    let classSymbol = nextSymbol.isClassName ? nextSymbol : lineSymbols[index - 2]
+
+                    result.subImports.push(new SubImport(this, classSymbol.text, classSymbol, false))
+
+                    if (nextSymbol.isFolder) {
+                        let folderImports = nextSymbol.namespaceParts.map(
+                            namespacePart => {
+                                let removePartRegex = new RegExp(`^${namespacePart}`)
+                                nextSymbol.domElement.innerHTML = nextSymbol.domElement.innerHTML.replace(removePartRegex, '')
+                                let span = document.createElement('span')
+                                span.innerHTML = namespacePart
+                                nextSymbol.domElement.prependChild(span)
+
+                                return new SubImport(this, namespacePart, span, true)
+                            }
+                        )
+                        result.subImports.push(...folderImports)
                     }
+                }
 
-                    result.previousKeyword = keyword
+                if (namespaceParts.length > 1) {
+                    this.isNamespaceImport = true
+                } else {
+                    this.isClassImport = true
+                }
 
-                    return result
-                }, {
-                    previousKeyword: null,
-                    usages: []
-                }).usages
+                result.usages.push(new ImportUsage(line, symbol))
+            }
 
-                result.push(...lineUsages)
-
-                return result
-        }, [])
+            return result
+        }, {
+            usages: [],
+            subImports: []
+        })
     }
 
     showUsagesPopup() {
@@ -76,7 +114,7 @@ class Import {
     }
 
     hideUsagesPopup() {
-        this.line.domElement.style.backgroundColor =  '#fff'
+        this.line.domElement.style.backgroundColor = '#fff'
         this.usagesPopup.style.display = 'none'
     }
 
@@ -111,7 +149,7 @@ class Import {
         popup.style.resize = 'both'
         popup.innerHTML =
             '<button class="lock-popup" style="font-size: 12px; height: 18px; position: absolute; left: 0">lock</button>'
-            + `<div style="font-weight: bold;">${this.usages.length} usage${this.usages.length > 1 ? 's' : ''}: </div>`
+            + `<div style="font-weight: bold;">${this.usages.length} occurrence${this.usages.length > 1 ? 's' : ''}: </div>`
             + `<ul style="background: rgba(256,256,256,1)">${usagesPopupHtml}</ul>`
         popup.style.position = 'absolute'
         popup.style.display = 'none'
@@ -146,7 +184,7 @@ class Import {
             if (
                 !this.lockPopup
                 && !popup.contains(event.toElement)
-                // && !event.toElement.closest('#usage-popup')
+            // && !event.toElement.closest('#usage-popup')
             ) {
                 this.hideUsagesPopup()
             }
@@ -175,7 +213,7 @@ class Import {
         }
 
         lockButton.addEventListener('click', (event) => {
-            if (!event.target.matches('a *')) {
+            if (!event.targetSymbol.matches('a *')) {
                 toggleLockPopup()
             }
         })
