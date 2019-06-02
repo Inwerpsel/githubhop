@@ -9,10 +9,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         if (fileImport.isFromGlobalNamespace) {
             title = `Global import, click to go to https://www.php.net/manual/en/class.${fileImport.fqcn.toLowerCase()}.php`
-            sendClickedMessage = () => {
+            sendClickedMessage = (member) => {
                 chrome.runtime.sendMessage({
                     message: 'global_import_clicked',
-                    className: fileImport.fqcn
+                    className: fileImport.fqcn,
+                    member: member
                 })
             }
         } else {
@@ -20,8 +21,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (fileImport.isNamespaceImport && fileImport.isClassImport) {
 
             }
-            sendClickedMessage = () => {
+            sendClickedMessage = (member) => {
                 let preferClassImport = false
+                if (typeof member === 'undefined' || !member) {
+                    member = false
+                }
                 // fileImport.isClassImport
                 // && fileImport.isNamespaceImport
                 // && confirm('This namespace is both a class and a folder. \nConfirm to go to class, cancel to go to namespace folder')
@@ -29,6 +33,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 chrome.runtime.sendMessage({
                     message: 'import_clicked',
                     fqcn: fileImport.fqcn,
+                    member: member,
                     isNamespaceImport: fileImport.isNamespaceImport,
                     isClassImport: fileImport.isClassImport,
                     preferClassImport: preferClassImport,
@@ -47,81 +52,93 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })
 
         fileImport.getUsages().forEach(usage => {
-            usage.symbol.domElement.setAttribute('title', `middle ${title}`)
+            if (usage.isMemberAccess) {
+                let textNode = usage.symbol.targetSymbol.domElement.nextSibling
+                let span = document.createElement('span')
+                let memberName = textNode.textContent.replace(/\(.*$/, '')
+                span.innerHTML = textNode.textContent
+                span.setAttribute('title', `${title} member ${memberName}`)
+                span.style.fontWeight = 700
+                span.style.cursor = 'help'
+                span.addEventListener('click', () => {
+                    sendClickedMessage(memberName)
+                })
+                textNode.parentNode.insertBefore(span, textNode)
+                textNode.parentNode.removeChild(textNode)
+            }
+            usage.symbol.domElement.setAttribute('title', `${title}`)
             usage.symbol.domElement.style.fontWeight = 700
             usage.symbol.domElement.style.cursor = 'help'
 
-            usage.symbol.domElement.addEventListener('mouseup', (event) => {
-
-                if (event.which === 2) {
-                    sendClickedMessage()
-                }
+            usage.symbol.domElement.addEventListener('click', () => {
+                sendClickedMessage()
             })
+
         })
 
         fileImport.subImports.forEach(subImport => {
             subImport.symbol.domElement.style.fontWeight = 700
             subImport.symbol.domElement.style.cursor = 'help'
-            subImport.symbol.domElement.addEventListener('mouseup', event => {
-                if (event.which === 2) {
-                    chrome.runtime.sendMessage({
-                        message: 'import_clicked',
-                        fqcn: `${fileImport.fqcn}\\${subImport.subNamespace}`,
-                        isNamespaceImport: subImport.isFolder,
-                        isClassImport: !subImport.isNamespace,
-                        preferClassImport: false,
-                        username: sourceFile.username,
-                        repository: sourceFile.repository,
-                        branch: sourceFile.branch
-                    })
-                }
+            subImport.symbol.domElement.addEventListener('click', () => {
+                chrome.runtime.sendMessage({
+                    message: 'import_clicked',
+                    fqcn: `${fileImport.fqcn}\\${subImport.subNamespace}`,
+                    isNamespaceImport: subImport.isFolder,
+                    isClassImport: !subImport.isNamespace,
+                    preferClassImport: false,
+                    username: sourceFile.username,
+                    repository: sourceFile.repository,
+                    branch: sourceFile.branch
+                })
             })
         })
     })
 
     let importedNamespaces = sourceFile.imports.map(anImport => anImport.getClass())
 
-    sourceFile.lines.forEach(line => {
-        line.symbols.filter(symbol => symbol.isInlineImport).forEach(symbol => {
-            symbol.domElement.style.fontWeight = '700'
-            symbol.domElement.style.cursor = 'help'
+    sourceFile.inlineImports.forEach(inlineImport => {
+        inlineImport.symbol.domElement.style.fontWeight = '700'
+        inlineImport.symbol.domElement.style.cursor = 'help'
+        inlineImport.symbol.domElement.title = 'inline import'
 
-            let fqcn
 
-            if (symbol.targetSymbol) {
-                fqcn = symbol.targetSymbol.text + symbol.text
+        let clickListener = () => {
+            if (inlineImport.isGlobalImport) {
+                chrome.runtime.sendMessage({
+                    message: 'global_import_clicked',
+                    className: inlineImport.fqcn
+                })
             } else {
-                fqcn = symbol.text
+                chrome.runtime.sendMessage({
+                    message: 'import_clicked',
+                    fqcn: inlineImport.fqcn,
+                    isNamespaceImport: false,
+                    isClassImport: true,
+                    preferClassImport: true,
+                    username: sourceFile.username,
+                    repository: sourceFile.repository,
+                    branch: sourceFile.branch
+                })
             }
+        }
+        inlineImport.symbol.domElement.addEventListener('click', clickListener)
 
-            fqcn = fqcn.replace(/^\\/, '')
+        if (inlineImport.targetSymbol) {
+            inlineImport.targetSymbol.domElement.style.fontWeight = '700'
+            inlineImport.targetSymbol.domElement.style.cursor = 'help'
+            inlineImport.targetSymbol.domElement.title = 'inline import'
+            inlineImport.targetSymbol.domElement.addEventListener('click', clickListener)
+        }
+    })
 
-            symbol.domElement.addEventListener('mouseup', event => {
-                if (fqcn.indexOf('\\') === -1) {
-                    chrome.runtime.sendMessage({
-                        message: 'global_import_clicked',
-                        className: fqcn
-                    })
-
-                } else {
-                    chrome.runtime.sendMessage({
-                        message: 'import_clicked',
-                        fqcn: fqcn,
-                        isNamespaceImport: false,
-                        isClassImport: true,
-                        preferClassImport: true,
-                        username: sourceFile.username,
-                        repository: sourceFile.repository,
-                        branch: sourceFile.branch
-                    })
-                }
-            })
-        })
-
-
-        line.symbols.filter(
-            symbol => symbol.isClassName
-        ).forEach((symbol) => {
+    let isPastClass = false // to avoid having to call getClassSymbol on each line
+    sourceFile.linesAfterLastImport.forEach(line => {
+        let isClass = isPastClass && line.getClassSymbol()
+        isPastClass = isPastClass && isClass
+        line.symbols.forEach((symbol) => {
+            if ((!symbol.isSelf && !symbol.isClassName) || isClass) {
+                return
+            }
             let namespacePart
             if (symbol.hasNamespacePrefix()) {
                 let firstPart = symbol.namespacePrefixSymbol.namespaceParts[0]
@@ -130,27 +147,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return
                 }
                 namespacePart = symbol.namespacePrefixSymbol.text + symbol.text
+            } else if (symbol.isSelf) {
+                namespacePart = sourceFile.currentClass
             } else if (!importedNamespaces.includes(symbol.text)) {
                 namespacePart = symbol.text
             } else {
                 return
             }
 
+            let ambiguousEventListener = member => {
+                chrome.runtime.sendMessage({
+                    message: 'ambiguous_inline_import_clicked',
+                    namespacePart: namespacePart,
+                    member: member,
+                    username: sourceFile.username,
+                    currentUrl: window.location.href,
+                    repository: sourceFile.repository,
+                    branch: sourceFile.branch,
+                    currentFileName: sourceFile.filename
+                })
+            }
+
+            if (symbol.targetSymbol && symbol.targetSymbol.isStaticAccessor) {
+                let textNode = symbol.targetSymbol.domElement.nextSibling
+                let span = document.createElement('span')
+                let memberName = textNode.textContent.replace(/\(.*$/, '')
+                let title = `${symbol.text} ${memberName}`
+                span.innerHTML = textNode.textContent
+                span.setAttribute('title', `${title} member ${memberName}`)
+                span.style.fontWeight = 700
+                span.style.cursor = 'help'
+                span.addEventListener('click', () => {
+                    ambiguousEventListener(memberName)
+                })
+                textNode.parentNode.insertBefore(span, textNode)
+                textNode.parentNode.removeChild(textNode)
+
+            }
+
             symbol.domElement.style.fontWeight = 700
             symbol.domElement.cursor = 'pointer'
-            symbol.domElement.addEventListener('mouseup', event => {
-                if (event.which === 2) {
-                    chrome.runtime.sendMessage({
-                        message: 'ambiguous_inline_import_clicked',
-                        namespacePart: namespacePart,
-                        username: sourceFile.username,
-                        currentUrl: window.location.href,
-                        repository: sourceFile.repository,
-                        branch: sourceFile.branch,
-                        currentFileName: sourceFile.filename
-                    })
-                }
-            })
+            symbol.domElement.addEventListener('click', ()=> {ambiguousEventListener(false)})
         })
     })
 

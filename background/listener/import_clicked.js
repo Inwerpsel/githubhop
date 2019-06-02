@@ -27,10 +27,12 @@ chrome.runtime.onMessage.addListener(
                 cacheEntry.lockJson,
                 request.username,
                 request.repository,
-                request.branch
+                request.branch,
+                request.member
             )
 
-            chrome.tabs.create({"url": url});
+            chrome.tabs.create({"url": url})
+
         })
 
         sendResponse({})
@@ -67,7 +69,8 @@ function lookupUrlForFqcn(
     lockJson,
     username,
     repository,
-    referencingBranch
+    referencingBranch,
+    classMember
 ) {
     let url
     let folder
@@ -186,7 +189,13 @@ function lookupUrlForFqcn(
         if (location.length > 0) {
             location = '/' + location
         }
-        url = `https://github.com/${username}/${repository}/blob/${referencingBranch}${location}/${filename}#blob-path`
+        url = `https://github.com/${username}/${repository}/blob/${referencingBranch}${location}/${filename}`
+        if (classMember) {
+            url += `#member=${classMember}`
+        } else {
+            // to show more of the file
+            url += '#blob-path'
+        }
     } else {
         // class also not found locally, just google it then
         url = `https://www.google.be/search?q=github ${fqcn}`

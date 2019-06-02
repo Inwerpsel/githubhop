@@ -12,7 +12,12 @@ chrome.runtime.onMessage.addListener(
             /\w*\.php$/, ''
         )
 
-        let possibleUrl = currentFileFolderUrl + request.namespacePart + '.php#blob-path'
+        let possibleUrl = currentFileFolderUrl + request.namespacePart + '.php'
+
+        possibleUrl +=
+            request.member
+                ? '#member=' + request.member
+                : '#blob-path'
 
         chrome.tabs.create({
             url: possibleUrl,

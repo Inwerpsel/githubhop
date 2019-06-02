@@ -1,6 +1,22 @@
 let sourceFile
 
 (function () {
+    let member = window.location.hash.split('member=')[1]
+
+    if (typeof member !== 'undefined') {
+        console.log('start looking for' + member)
+        let memberEscaped = member.replace(/\$/, '\\$')
+        let memberRegex = new RegExp(
+            `((public |protected |private )(static )|function |const )${memberEscaped}`
+        )
+
+        let matchingLine = [...document.querySelectorAll('[id^=LC]')].find(line=> line.textContent.match(memberRegex))
+
+        if (typeof matchingLine !== 'undefined') {
+            window.location.hash = `#L${matchingLine.id.replace(/^LC/, '')}`
+        }
+    }
+
     try {
         sourceFile = SourceFile.fromUrlAndDocument(window.location.href, document)
     } catch (error) {
@@ -17,7 +33,7 @@ let sourceFile
         }
     }
 
-    if (sourceFile.imports.length === 0) {
+    if (sourceFile.imports.length === 0 && sourceFile.inlineImports.length === 0) {
         return
     }
 
@@ -28,5 +44,5 @@ let sourceFile
         "branch": sourceFile.branch
     })
 
-    sourceFile.fetchImportUsages()
+    sourceFile.findImportUsages()
 })()

@@ -4,7 +4,9 @@ class SourceFile {
                 branch,
                 filename,
                 lines,
-                imports
+                imports,
+                inlineImports,
+                currentClass
     ) {
         this.username = username
         this.repository = repository
@@ -12,6 +14,8 @@ class SourceFile {
         this.filename = filename
         this.lines = lines
         this.imports = imports
+        this.inlineImports = inlineImports
+        this.currentClass = currentClass
     }
 
     static fromUrlAndDocument(
@@ -37,16 +41,28 @@ class SourceFile {
 
         let lines = CodeLine.getAllFromDocument(document)
 
+        let currentClass = lines.find(line=> line.getClassSymbol()).getClassSymbol().targetSymbol.text
+
         let imports = Import.getAllFromLines(lines)
 
-        return new SourceFile(
+        // let subImports = SubImport.getAllFromLines(imports, lines)
+
+        let inlineImports = InlineImport.getAllFromLines(lines)
+
+        let sourceFile = new SourceFile(
             username,
             repository,
             branch,
             filename,
             lines,
-            imports
+            imports,
+            inlineImports,
+            currentClass
         )
+
+        sourceFile.findImportUsages()
+
+        return  sourceFile
     }
 
     static supportsExtension(extension) {
@@ -56,14 +72,18 @@ class SourceFile {
     }
 
     getLinesAfterLastImport() {
-        let lastImport = this.imports[sourceFile.imports.length - 1]
+        if (!this.linesAfterLastImport) {
+            let lastImport = this.imports[this.imports.length - 1]
 
-        return this.lines.filter(
-            line => line.number > lastImport.line.number
-        )
+            this.linesAfterLastImport = this.lines.filter(
+                line => line.number > lastImport.line.number
+            )
+        }
+
+        return this.linesAfterLastImport
     }
 
-    fetchImportUsages() {
+    findImportUsages() {
         if (this.imports.length === 0) {
             return
         }
@@ -73,11 +93,9 @@ class SourceFile {
             0
         )
 
-        let lastImportLineNumber = this.imports[sourceFile.imports.length - 1].line.number
-
         this.imports.forEach((anImport) => {
             // Search code for occurrences
-            anImport.fetchUsagesAndSubImports(sourceFile, lastImportLineNumber)
+            anImport.fetchUsagesAndSubImports(this)
             anImport.generateUsagesPopup(longestImportRight)
         })
     }

@@ -5,55 +5,99 @@ class CodeSymbol {
         this.line = line
         this.isImport= isImport
         this.targetSymbol = targetSymbol
-        this.isClassSymbol = (this.text === 'class')
-        this.isNamespaceSymbol = (this.text === 'namespace')
+
         this.namespaceParts = this.text.split('\\')
-        this.isClassName = this.text.match(/^[A-Z][a-z]\w*$/)
-        this.isInlineImport = this.namespaceParts[0] === '' // when first character of text is "\"
+        this.isInlineImport = false
+        this.isFolder = false
+
+        if (this.text.match(/^[A-Z][a-z]\w*$/)) {
+            this.isClassName = true // when first character of text is "\"
+
+        } else if (this.text.match(/\w+\\$/)) {
+            this.isFolder = true
+
+        // } else if (this.text === '->') {
+        //     this.isAccessor = true
+
+        } else if (this.text === '::') {
+            this.isStaticAccessor = true
+
+        } else if (this.text === 'self') {
+            this.isSelf = true
+
+        } else if (this.namespaceParts[0] === '') {
+            this.isInlineImport = true
+
+        // } else if (this.text === 'namespace') {
+        //     this.isNamespaceSymbol = true
+
+        } else if (['class', 'interface'].includes(this.text)) {
+            this.isClassSymbol = true
+
+        }
+
         this.namespacePrefixSymbol = null
-        this.isFolder = this.text.match(/\w+\\$/)
+        this.isInlinePrefixed = false
     }
 
     // For now all symbols we are interested in reside inside of span, but some code may be just text
     static getAllFromLine(line, isAfterClassDeclaration) {
-        let lineElements = [...line.domElement.querySelectorAll('span > span')]
+        let lineElements = [...line.domElement.querySelectorAll('td > span > span')]
 
         // reverse
         return lineElements.reverse().reduce((symbols, domElement) => {
             let isImport= false
             let importTarget = null
 
-            if (!isAfterClassDeclaration && domElement.innerHTML === 'use') {
+            let nextSymbol = symbols[symbols.length - 1]
+
+            let text = domElement.textContent
+
+            if (!isAfterClassDeclaration && text === 'use') {
                 let lastElementIndex = symbols.length - 1
 
                 if (lastElementIndex > -1) {
-                    let possibleFqcnSymbol = symbols[lastElementIndex]
-
-                    if (possibleFqcnSymbol.text.match(/^\w+(\\\w+)*$/)) {
-                        importTarget = possibleFqcnSymbol
+                    if (nextSymbol.text.match(/^\w+(\\\w+)*$/)) {
+                        importTarget = nextSymbol
                         isImport= true
                     }
                 }
             }
 
             let symbol = new CodeSymbol(
-                domElement.innerHTML,
+                text,
                 domElement,
                 line,
                 isImport,
                 importTarget
             )
 
-            if (symbol.isFolder) {
-                let targetSymbol = symbols[symbols.length - 1]
-                symbol.setTargetSymbol(targetSymbol)
-                targetSymbol.setNamespacePrefixSymbol(symbol)
+            if (nextSymbol && symbol.isFolder) {
+                symbol.setTargetSymbol(nextSymbol)
+                nextSymbol.setNamespacePrefixSymbol(symbol)
+            }
+
+            if (nextSymbol && symbol.isClassSymbol) {
+                symbol.setTargetSymbol(nextSymbol)
+            }
+
+            if (nextSymbol && symbol.isInlineImport && nextSymbol.isClassName) {
+                symbol.targetSymbol = nextSymbol
+                nextSymbol.markAsInlinePrefixed()
+            }
+
+            if (nextSymbol && nextSymbol.isStaticAccessor) {
+                symbol.targetSymbol = nextSymbol
             }
 
             symbols.push(symbol)
 
             return symbols
         }, [])
+    }
+
+    markAsInlinePrefixed() {
+        this.isInlinePrefixed = true
     }
 
     hasNamespacePrefix() {

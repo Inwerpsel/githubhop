@@ -2,6 +2,7 @@ class CodeLine {
     constructor(number, domElement) {
         this.number = parseInt(number)
         this.domElement = domElement
+        this.classSymbol = null
     }
 
     static getAllFromDocument(document) {
@@ -13,13 +14,17 @@ class CodeLine {
 
                 codeLine.symbols = CodeSymbol.getAllFromLine(codeLine, isAfterClassDeclaration)
 
-                isAfterClassDeclaration = isAfterClassDeclaration || codeLine.hasClassSymbol()
+                isAfterClassDeclaration = isAfterClassDeclaration || codeLine.getClassSymbol()
 
                 return codeLine
             })
     }
 
-    hasClassSymbol() {
-        return typeof this.symbols.find(symbol => symbol.isClassSymbol) !== 'undefined'
+    getClassSymbol() {
+        if (this.classSymbol === null) {
+            this.classSymbol = this.symbols.find(symbol => symbol.isClassSymbol)
+        }
+
+        return this.classSymbol
     }
 }

@@ -62,15 +62,14 @@ class Import {
 
         return lineSymbols.reduce((result, symbol, index) => {
             let namespaceParts = symbol.namespaceParts
+            let nextSymbol = lineSymbols[index + 1]
 
             // check if previous element is namespace
             if (
-                this.getClass() === namespaceParts[0]
-                && typeof lineSymbols[index + 1] !== 'undefined'
-                && !lineSymbols[index + 1].isFolder
+                !symbol.isInlinePrefixed
+                && this.getClass() === namespaceParts[0]
+                && (!nextSymbol || !nextSymbol.isFolder)
             ) {
-                let nextSymbol = lineSymbols[index - 1]
-
                 if (typeof nextSymbol !== 'undefined' && (nextSymbol.isClassName || nextSymbol.isFolder)) {
                     let classSymbol = nextSymbol.isClassName ? nextSymbol : lineSymbols[index - 2]
 
@@ -149,13 +148,13 @@ class Import {
         popup.style.resize = 'both'
         popup.innerHTML =
             '<button class="lock-popup" style="font-size: 12px; height: 18px; position: absolute; left: 0">lock</button>'
-            + `<div style="font-weight: bold;">${this.usages.length} occurrence${this.usages.length > 1 ? 's' : ''}: </div>`
+            + `<div style="font-weight: bold;">${this.usages.length} occurrence${this.usages.length > 1 ? 's' : ''}: of ${this.fqcn}</div>`
             + `<ul style="background: rgba(256,256,256,1)">${usagesPopupHtml}</ul>`
         popup.style.position = 'absolute'
         popup.style.display = 'none'
         popup.style.border = '1px solid black'
-        popup.style.top = `${top}px`
-        popup.style.left = `${left}px`
+        popup.style.top = `${top + 10}px`
+        popup.style.left = `${left + 30}px`
         popup.style.background = 'rgba(256,256,256,1)'
         popup.style.maxHeight = '600px'
         popup.style.width = '900px'
@@ -182,12 +181,14 @@ class Import {
 
         this.line.domElement.addEventListener('mouseleave', (event) => {
             if (
-                !this.lockPopup
-                && !popup.contains(event.toElement)
-            // && !event.toElement.closest('#usage-popup')
+                this.lockPopup
+                || !event.toElement
+                || event.toElement.className === 'usages-popup'
+                || popup.contains(event.toElement)
             ) {
-                this.hideUsagesPopup()
+                return
             }
+            this.hideUsagesPopup()
         })
 
         let lockButton = popup.querySelector('.lock-popup')
@@ -213,7 +214,7 @@ class Import {
         }
 
         lockButton.addEventListener('click', (event) => {
-            if (!event.targetSymbol.matches('a *')) {
+            if (!event.target.matches('a *')) {
                 toggleLockPopup()
             }
         })
