@@ -1,4 +1,6 @@
 class CodeSymbol {
+    static classTypes = ['class', 'interface', 'trait']
+
     constructor (text, domElement, line, isImport, targetSymbol) {
         this.text = text
         this.domElement = domElement
@@ -31,7 +33,7 @@ class CodeSymbol {
         // } else if (this.text === 'namespace') {
         //     this.isNamespaceSymbol = true
 
-        } else if (['class', 'interface'].includes(this.text)) {
+        } else if (CodeSymbol.classTypes.includes(this.text)) {
             this.isClassSymbol = true
 
         }
