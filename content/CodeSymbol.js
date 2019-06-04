@@ -3,7 +3,7 @@ class CodeSymbol {
 
     static reservedKeywords = [
         ...CodeSymbol.classTypes,
-        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as'
+        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as', 'instanceof'
     ]
 
     constructor (text, domElement, line, isImport, targetSymbol) {
@@ -107,7 +107,7 @@ class CodeSymbol {
                 symbol.targetSymbol = nextSymbol
             }
 
-            if (symbol.isAccessor) {
+            if (symbol.isAccessor && nextSymbol) {
                 nextSymbol.isFunction = false
             }
 
