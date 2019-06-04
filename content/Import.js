@@ -1,14 +1,19 @@
 class Import {
-    constructor(fqcn, line, symbol, targetSymbol) {
+    constructor(fqcn, line, symbol, targetSymbol, alias) {
         this.fqcn = fqcn // string
         this.line = line // CodeLine
         this.symbol = symbol
         this.targetSymbol = targetSymbol
+        this.alias = alias
 
         this.usages = null
         this.subImports = null
 
         this.fqcnParts = targetSymbol.namespaceParts
+        this.class = this.alias
+            ? this.alias
+            : this.fqcnParts[this.fqcnParts.length - 1]
+
         this.isFromGlobalNamespace = this.fqcnParts.length === 1
         // when importing a namespace instead of a class
         // will be set to true once this is detected from the usages
@@ -19,11 +24,18 @@ class Import {
     }
 
     static fromLineAndSymbol(line, symbol) {
+        let alias
+        let aliasSymbol = symbol.targetSymbol.targetSymbol
+        if (aliasSymbol && aliasSymbol.isAs) {
+            alias = aliasSymbol.targetSymbol.text
+        }
+
         return new Import(
             symbol.targetSymbol.text,
             line,
             symbol,
-            symbol.targetSymbol
+            symbol.targetSymbol,
+            alias
         )
     }
 
@@ -118,7 +130,8 @@ class Import {
     }
 
     getClass() {
-        return this.fqcnParts[this.fqcnParts.length - 1]
+        return this.class
+
     }
 
     getUsages() {

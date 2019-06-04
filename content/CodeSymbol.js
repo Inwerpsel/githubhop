@@ -1,6 +1,11 @@
 class CodeSymbol {
     static classTypes = ['class', 'interface', 'trait']
 
+    static reservedKeywords = [
+        ...CodeSymbol.classTypes,
+        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as'
+    ]
+
     constructor (text, domElement, line, isImport, targetSymbol) {
         this.text = text
         this.domElement = domElement
@@ -11,15 +16,18 @@ class CodeSymbol {
         this.namespaceParts = this.text.split('\\')
         this.isInlineImport = false
         this.isFolder = false
+        this.isFunction = false
+        this.isConstant = false
+        this.isAs = false
 
         if (this.text.match(/^[A-Z][a-z]\w*$/)) {
-            this.isClassName = true // when first character of text is "\"
+            this.isClassName = true
 
         } else if (this.text.match(/\w+\\$/)) {
             this.isFolder = true
 
-        // } else if (this.text === '->') {
-        //     this.isAccessor = true
+        } else if (this.text === '->') {
+            this.isAccessor = true
 
         } else if (this.text === '::') {
             this.isStaticAccessor = true
@@ -36,6 +44,16 @@ class CodeSymbol {
         } else if (CodeSymbol.classTypes.includes(this.text)) {
             this.isClassSymbol = true
 
+        } else if (
+            text.match(/^[a-z][a-z0-9_]+$/)
+            && !CodeSymbol.reservedKeywords.includes(text)
+        ) {
+            this.isFunction = true
+
+        } else if (
+            text.match(/^[A-Z][A-Z_0-9]+$/)
+        ) {
+            this.isConstant = true
         }
 
         this.namespacePrefixSymbol = null
@@ -77,15 +95,20 @@ class CodeSymbol {
             if (nextSymbol && symbol.isFolder) {
                 symbol.setTargetSymbol(nextSymbol)
                 nextSymbol.setNamespacePrefixSymbol(symbol)
-            }
-
-            if (nextSymbol && symbol.isClassSymbol) {
-                symbol.setTargetSymbol(nextSymbol)
-            }
-
-            if (nextSymbol && symbol.isInlineImport && nextSymbol.isClassName) {
+            } else if (nextSymbol && symbol.isClassSymbol) {
+                symbol.targetSymbol = nextSymbol
+            } else if (nextSymbol && symbol.isInlineImport && nextSymbol.isClassName) {
                 symbol.targetSymbol = nextSymbol
                 nextSymbol.markAsInlinePrefixed()
+            } else if (symbol.text === 'as') {
+                symbol.isAs = true
+                symbol.targetSymbol = nextSymbol
+            } else if (nextSymbol && nextSymbol.isAs) {
+                symbol.targetSymbol = nextSymbol
+            }
+
+            if (symbol.isAccessor) {
+                nextSymbol.isFunction = false
             }
 
             if (nextSymbol && nextSymbol.isStaticAccessor) {

@@ -131,11 +131,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
     })
 
+    let functionListener = (functionName) => {
+        chrome.runtime.sendMessage({
+            message: 'global_import_clicked',
+            functionName: functionName
+        })
+    }
+
+    let constantListener = (constantName) => {
+        chrome.runtime.sendMessage({
+            message: 'global_import_clicked',
+            constantName: constantName
+        })
+    }
+
     let isPastClass = false // to avoid having to call getClassSymbol on each line
-    sourceFile.linesAfterLastImport.forEach(line => {
+    sourceFile.getLinesAfterLastImport().forEach(line => {
         let isClass = isPastClass && line.getClassSymbol()
         isPastClass = isPastClass && isClass
         line.symbols.forEach((symbol) => {
+            if (symbol.isFunction) {
+                symbol.domElement.style.fontWeight = '700'
+                symbol.domElement.style.cursor = 'help'
+                symbol.domElement.title = 'inline global function usage'
+                symbol.domElement.addEventListener('click', () => {functionListener(symbol.text)})
+                return
+            }
+
+            if (symbol.isConstant) {
+                symbol.domElement.style.fontWeight = '700'
+                symbol.domElement.style.cursor = 'help'
+                symbol.domElement.title = 'inline global constant usage'
+                symbol.domElement.addEventListener('click', () => {constantListener(symbol.text)})
+                return
+            }
+
             if ((!symbol.isSelf && !symbol.isClassName) || isClass) {
                 return
             }
@@ -172,9 +202,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 let textNode = symbol.targetSymbol.domElement.nextSibling
                 let span = document.createElement('span')
                 let memberName = textNode.textContent.replace(/\(.*$/, '')
-                let title = `${symbol.text} ${memberName}`
                 span.innerHTML = textNode.textContent
-                span.setAttribute('title', `${title} member ${memberName}`)
+                span.setAttribute('title', `${namespacePart} member ${memberName}`)
                 span.style.fontWeight = 700
                 span.style.cursor = 'help'
                 span.addEventListener('click', () => {

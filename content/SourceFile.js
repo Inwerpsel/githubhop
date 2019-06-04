@@ -73,10 +73,15 @@ class SourceFile {
 
     getLinesAfterLastImport() {
         if (!this.linesAfterLastImport) {
-            let lastImport = this.imports[this.imports.length - 1]
+            let fromLineNumber
+            if (this.imports.length > 0) {
+                fromLineNumber = this.imports[this.imports.length - 1].line.number
+            } else {
+                fromLineNumber = this.lines.find(line => line.classSymbol).number
+            }
 
             this.linesAfterLastImport = this.lines.filter(
-                line => line.number > lastImport.line.number
+                line => line.number > fromLineNumber
             )
         }
 

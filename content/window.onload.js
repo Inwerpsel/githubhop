@@ -7,7 +7,7 @@ let sourceFile
         console.log('start looking for' + member)
         let memberEscaped = member.replace(/\$/, '\\$')
         let memberRegex = new RegExp(
-            `((public |protected |private )(static )|function |const )${memberEscaped}`
+            `((public |protected |private )(static )(\\$)|function |const )${memberEscaped}`
         )
 
         let matchingLine = [...document.querySelectorAll('[id^=LC]')].find(line=> line.textContent.match(memberRegex))
