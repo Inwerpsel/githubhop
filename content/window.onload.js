@@ -7,7 +7,7 @@ let sourceFile
         console.log('start looking for' + member)
         let memberEscaped = member.replace(/\$/, '\\$')
         let memberRegex = new RegExp(
-            `((public |protected |private )(static )(\\$)|function |const )${memberEscaped}`
+            `((public |protected |private )(static )?\\$?|function |const )${memberEscaped}`
         )
 
         let matchingLine = [...document.querySelectorAll('[id^=LC]')].find(line=> line.textContent.match(memberRegex))
@@ -18,7 +18,9 @@ let sourceFile
     }
 
     try {
+        let tStart = (new Date).getTime()
         sourceFile = SourceFile.fromUrlAndDocument(window.location.href, document)
+        console.log(`${(new Date).getTime() - tStart} ms to parse source file`)
     } catch (error) {
         if (error === 'location not github file') {
             console.log(error)

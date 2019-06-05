@@ -199,6 +199,9 @@ function lookupUrlForFqcn(
     } else {
         // class also not found locally, just google it then
         url = `https://www.google.be/search?q=github ${fqcn}`
+        if (classMember) {
+            url += ` ${classMember}`
+        }
     }
 
     return url

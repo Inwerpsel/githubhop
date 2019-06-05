@@ -2,6 +2,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.message !== "package_manager_cache_ready") {
         return
     }
+    let tStart = (new Date).getTime()
 
     sourceFile.imports.forEach(fileImport => {
         let title
@@ -198,7 +199,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 })
             }
 
-            if (symbol.targetSymbol && symbol.targetSymbol.isStaticAccessor) {
+            if (symbol.targetSymbol && (symbol.targetSymbol.isStaticAccessor || symbol.targetSymbol.isAccessor)) {
                 let textNode = symbol.targetSymbol.domElement.nextSibling
                 let span = document.createElement('span')
                 let memberName = textNode.textContent.replace(/\(.*$/, '')
@@ -219,6 +220,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             symbol.domElement.addEventListener('click', ()=> {ambiguousEventListener(false)})
         })
     })
+
+    console.log(`${(new Date).getTime() - tStart} ms for attaching links`)
 
     sendResponse({})
 })

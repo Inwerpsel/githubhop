@@ -3,7 +3,7 @@ class CodeSymbol {
 
     static reservedKeywords = [
         ...CodeSymbol.classTypes,
-        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as', 'instanceof'
+        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'protected', 'extends', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as', 'instanceof', 'parent', 'foreach', 'for', 'use', 'break', 'continue', 'while', 'array', 'new', 'static', 'implements', 'abstract', 'switch', 'case'
     ]
 
     constructor (text, domElement, line, isImport, targetSymbol) {
@@ -19,6 +19,8 @@ class CodeSymbol {
         this.isFunction = false
         this.isConstant = false
         this.isAs = false
+        this.isFunctionKeyword = false
+        this.isConstKeyword = false
 
         if (this.text.match(/^[A-Z][a-z]\w*$/)) {
             this.isClassName = true
@@ -32,7 +34,7 @@ class CodeSymbol {
         } else if (this.text === '::') {
             this.isStaticAccessor = true
 
-        } else if (this.text === 'self') {
+        } else if (this.text === 'self' || this.text === 'static' || this.text === '$this') {
             this.isSelf = true
 
         } else if (this.namespaceParts[0] === '') {
@@ -54,6 +56,11 @@ class CodeSymbol {
             text.match(/^[A-Z][A-Z_0-9]+$/)
         ) {
             this.isConstant = true
+        } else if (text === 'function') {
+            this.isFunctionKeyword = true
+
+        } else if (text === 'const') {
+            this.isConstKeyword = true
         }
 
         this.namespacePrefixSymbol = null
@@ -107,12 +114,21 @@ class CodeSymbol {
                 symbol.targetSymbol = nextSymbol
             }
 
-            if (symbol.isAccessor && nextSymbol) {
+            if (symbol.isAccessor && nextSymbol && symbol.domElement.nextSibling.nodeType !== 3) {
                 nextSymbol.isFunction = false
             }
 
-            if (nextSymbol && nextSymbol.isStaticAccessor) {
+            if (nextSymbol && (nextSymbol.isStaticAccessor || nextSymbol.isAccessor)) {
                 symbol.targetSymbol = nextSymbol
+            }
+
+            if (symbol.isFunctionKeyword && nextSymbol) {
+                nextSymbol.isFunction = false
+                symbol.targetSymbol = nextSymbol
+            }
+
+            if (symbol.isConstKeyword && nextSymbol) {
+                nextSymbol.isConstant = false
             }
 
             symbols.push(symbol)

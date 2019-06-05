@@ -1,37 +1,42 @@
 {
-    "manifest_version": 2,
-    "name": "GitHubHop",
-    "version": "0.1",
-    "content_scripts": [
-      {
-        "matches": [
-          "https://github.com/*"
-        ],
-        "js": [
-          "content/listener/cache_ready.js",
-          "content/CodeSymbol.js",
-          "content/CodeLine.js",
-          "content/Import.js",
-          "content/ImportUsage.js",
-          "content/InlineImport.js",
-          "content/SourceFile.js",
-          "content/Subimport.js",
-          "content/window.onload.js"
-        ]
-      }
-    ],
-    "permissions": [
-      "tabs",
-      "storage"
-    ],
-    "background": {
-      "scripts": [
-        "background/functions.js",
-        "background/listener/global_import_clicked.js",
-        "background/listener/ambiguous_inline_import_clicked.js",
-        "background/listener/import_clicked.js",
-        "background/listener/imports_found.js"
+  "manifest_version": 2,
+  "name": "GitHubHop",
+  "version": "0.1",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://github.com/*"
       ],
-      "persistent": false
+      "js": [
+        "content/listener/cache_ready.js",
+        "content/CodeSymbol.js",
+        "content/CodeLine.js",
+        "content/Import.js",
+        "content/ImportUsage.js",
+        "content/InlineImport.js",
+        "content/SourceFile.js",
+        "content/Subimport.js",
+        "content/window.onload.js"
+      ]
     }
+  ],
+  "permissions": [
+    "tabs",
+    "storage",
+    "contextMenus"
+  ],
+  "background": {
+    "scripts": [
+      "background/functions.js",
+      "background/listener/global_import_clicked.js",
+      "background/listener/ambiguous_inline_import_clicked.js",
+      "background/listener/import_clicked.js",
+      "background/listener/imports_found.js",
+      "background/context-menu.js"
+    ],
+    "persistent": false
+  },
+  "icons": {
+    "64": "icon.png"
   }
+}

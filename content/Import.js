@@ -30,11 +30,21 @@ class Import {
             alias = aliasSymbol.targetSymbol.text
         }
 
+        let fqcn
+        let targetSymbol
+        if (symbol.targetSymbol.isFunctionKeyword) {
+            fqcn = symbol.targetSymbol.targetSymbol.text
+            targetSymbol = symbol.targetSymbol.targetSymbol
+        } else {
+            fqcn = symbol.targetSymbol.text
+            targetSymbol = symbol.targetSymbol
+        }
+
         return new Import(
-            symbol.targetSymbol.text,
+            fqcn,
             line,
             symbol,
-            symbol.targetSymbol,
+            targetSymbol,
             alias
         )
     }
@@ -82,7 +92,11 @@ class Import {
                 && this.getClass() === namespaceParts[0]
                 && (!nextSymbol || !nextSymbol.isFolder)
             ) {
-                if (typeof nextSymbol !== 'undefined' && (nextSymbol.isClassName || nextSymbol.isFolder)) {
+                if (
+                    typeof nextSymbol !== 'undefined'
+                    && (nextSymbol.isClassName || nextSymbol.isFolder)
+                    && (symbol.text.match(/\\$/) || nextSymbol.text.match(/^\\/))
+                ) {
                     let classSymbol = nextSymbol.isClassName ? nextSymbol : lineSymbols[index - 2]
 
                     result.subImports.push(new SubImport(this, classSymbol.text, classSymbol, false))
