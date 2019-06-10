@@ -14,6 +14,8 @@ class CodeLine {
 
                 codeLine.symbols = CodeSymbol.getAllFromLine(codeLine, isAfterClassDeclaration)
 
+
+
                 isAfterClassDeclaration = isAfterClassDeclaration || codeLine.getClassSymbol()
 
                 return codeLine

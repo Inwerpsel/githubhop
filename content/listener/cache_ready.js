@@ -19,12 +19,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         } else {
             title = `click to search for source file for ${fileImport.fqcn}`
-            if (fileImport.isNamespaceImport && fileImport.isClassImport) {
-
-            }
-            sendClickedMessage = (member) => {
+            // if (fileImport.isNamespaceImport && fileImport.isClassImport) {
+            //
+            // }
+            sendClickedMessage = (member, isParentClass) => {
                 let preferClassImport = false
-                if (typeof member === 'undefined' || !member) {
+                if (isParentClass) {
+                    let memberParam = window.location.hash.split('member=')[1]
+                    if (memberParam) {
+                        member = memberParam
+                    }
+                } else if (typeof member === 'undefined' || !member) {
                     member = false
                 }
                 // fileImport.isClassImport
@@ -59,7 +64,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 let memberName = textNode.textContent.replace(/\(.*$/, '')
                 span.innerHTML = textNode.textContent
                 span.setAttribute('title', `${title} member ${memberName}`)
-                span.style.fontWeight = 700
+                // span.style.fontWeight = 700
                 span.style.cursor = 'help'
                 span.addEventListener('click', () => {
                     sendClickedMessage(memberName)
@@ -68,17 +73,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 textNode.parentNode.removeChild(textNode)
             }
             usage.symbol.domElement.setAttribute('title', `${title}`)
-            usage.symbol.domElement.style.fontWeight = 700
+            // usage.symbol.domElement.style.fontWeight = 700
             usage.symbol.domElement.style.cursor = 'help'
 
             usage.symbol.domElement.addEventListener('click', () => {
-                sendClickedMessage()
+                sendClickedMessage(false, usage.isParentClass)
             })
 
         })
 
         fileImport.subImports.forEach(subImport => {
-            subImport.symbol.domElement.style.fontWeight = 700
+            // subImport.symbol.domElement.style.fontWeight = 700
             subImport.symbol.domElement.style.cursor = 'help'
             subImport.symbol.domElement.addEventListener('click', () => {
                 chrome.runtime.sendMessage({
@@ -98,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     let importedNamespaces = sourceFile.imports.map(anImport => anImport.getClass())
 
     sourceFile.inlineImports.forEach(inlineImport => {
-        inlineImport.symbol.domElement.style.fontWeight = '700'
+        // inlineImport.symbol.domElement.style.fontWeight = '700'
         inlineImport.symbol.domElement.style.cursor = 'help'
         inlineImport.symbol.domElement.title = 'inline import'
 
@@ -125,7 +130,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         inlineImport.symbol.domElement.addEventListener('click', clickListener)
 
         if (inlineImport.targetSymbol) {
-            inlineImport.targetSymbol.domElement.style.fontWeight = '700'
+            // inlineImport.targetSymbol.domElement.style.fontWeight = '700'
             inlineImport.targetSymbol.domElement.style.cursor = 'help'
             inlineImport.targetSymbol.domElement.title = 'inline import'
             inlineImport.targetSymbol.domElement.addEventListener('click', clickListener)
@@ -152,7 +157,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         isPastClass = isPastClass && isClass
         line.symbols.forEach((symbol) => {
             if (symbol.isFunction) {
-                symbol.domElement.style.fontWeight = '700'
+                // symbol.domElement.style.fontWeight = '700'
                 symbol.domElement.style.cursor = 'help'
                 symbol.domElement.title = 'inline global function usage'
                 symbol.domElement.addEventListener('click', () => {functionListener(symbol.text)})
@@ -160,7 +165,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             if (symbol.isConstant) {
-                symbol.domElement.style.fontWeight = '700'
+                // symbol.domElement.style.fontWeight = '700'
                 symbol.domElement.style.cursor = 'help'
                 symbol.domElement.title = 'inline global constant usage'
                 symbol.domElement.addEventListener('click', () => {constantListener(symbol.text)})
@@ -186,7 +191,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return
             }
 
-            let ambiguousEventListener = member => {
+            let ambiguousEventListener = (member, isParentClass) => {
+
+                if (isParentClass) {
+                    let memberParam = window.location.hash.split('member=')[1]
+                    if (memberParam) {
+                        member = memberParam
+                    }
+                }
+
                 chrome.runtime.sendMessage({
                     message: 'ambiguous_inline_import_clicked',
                     namespacePart: namespacePart,
@@ -205,19 +218,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 let memberName = textNode.textContent.replace(/\(.*$/, '')
                 span.innerHTML = textNode.textContent
                 span.setAttribute('title', `${namespacePart} member ${memberName}`)
-                span.style.fontWeight = 700
+                // span.style.fontWeight = 700
                 span.style.cursor = 'help'
                 span.addEventListener('click', () => {
-                    ambiguousEventListener(memberName)
+                    ambiguousEventListener(memberName, false)
                 })
                 textNode.parentNode.insertBefore(span, textNode)
                 textNode.parentNode.removeChild(textNode)
 
             }
 
-            symbol.domElement.style.fontWeight = 700
-            symbol.domElement.cursor = 'pointer'
-            symbol.domElement.addEventListener('click', ()=> {ambiguousEventListener(false)})
+            // symbol.domElement.style.fontWeight = 700
+            symbol.domElement.style.cursor = 'help'
+            symbol.domElement.title = namespacePart
+            symbol.domElement.addEventListener('click', ()=> {ambiguousEventListener(false, symbol.isParentClass)})
         })
     })
 
