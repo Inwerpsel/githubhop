@@ -1,15 +1,16 @@
 class Import {
-    constructor(fqcn, line, symbol, targetSymbol, alias) {
+    constructor(fqcn, line, symbol, targetSymbol, alias, isGrouped) {
         this.fqcn = fqcn // string
         this.line = line // CodeLine
         this.symbol = symbol
         this.targetSymbol = targetSymbol
         this.alias = alias
+        this.isGrouped = isGrouped
 
         this.usages = null
         this.subImports = null
 
-        this.fqcnParts = targetSymbol.namespaceParts
+        this.fqcnParts = fqcn.split('\\')
         this.class = this.alias
             ? this.alias
             : this.fqcnParts[this.fqcnParts.length - 1]
@@ -23,7 +24,8 @@ class Import {
         this.lockPopup = false
     }
 
-    static fromLineAndSymbol(line, symbol) {
+    static fromLineAndSymbol(line, symbol, allLines) {
+        let imports
         let alias
         let aliasSymbol = symbol.targetSymbol.targetSymbol
         if (aliasSymbol && aliasSymbol.isAs) {
@@ -32,6 +34,7 @@ class Import {
 
         let fqcn
         let targetSymbol
+
         if (symbol.targetSymbol.isFunctionKeyword) {
             fqcn = symbol.targetSymbol.targetSymbol.text
             targetSymbol = symbol.targetSymbol.targetSymbol
@@ -40,19 +43,60 @@ class Import {
             targetSymbol = symbol.targetSymbol
         }
 
-        return new Import(
-            fqcn,
-            line,
-            symbol,
-            targetSymbol,
-            alias
-        )
+        if (targetSymbol.text.match(/{$/)) {
+            // grouped import
+            let baseNamespace = targetSymbol.text.replace(/\\{$/, '')
+            let baseImport = new Import(baseNamespace, line, symbol, targetSymbol, false, false)
+            baseImport.isNamespaceImport = true
+
+            let hasVisitedClosingSymbol = false
+            let subImports = allLines.reduce((result, possibleSubImportLine) => {
+                if (!hasVisitedClosingSymbol && possibleSubImportLine.number > line.number) {
+                    hasVisitedClosingSymbol = possibleSubImportLine.domElement.textContent.match(/}/)
+                    possibleSubImportLine.symbols.forEach(possibleSubImportSymbol => {
+                        let subFqcn = `${baseNamespace}\\${possibleSubImportSymbol.text}`
+                        result.push(new Import(
+                            subFqcn,
+                            possibleSubImportLine,
+                            symbol,
+                            possibleSubImportSymbol,
+                            false,
+                            true
+                        ))
+                    })
+                }
+
+                return result
+            }, [])
+
+            imports = [
+                baseImport,
+                ...subImports
+            ]
+        } else {
+            // single import
+            imports = [new Import(
+                fqcn,
+                line,
+                symbol,
+                targetSymbol,
+                alias,
+                false
+            )]
+        }
+
+        return imports
     }
 
     static getAllFromLines(lines) {
         return lines.reduce((result, line) => {
             let importSymbols = line.symbols.filter(symbol => symbol.isImport)
-            let lineImports = importSymbols.map(symbol => Import.fromLineAndSymbol(line, symbol))
+            let lineImports = importSymbols.reduce(
+                (result, symbol) => {
+                    result.push(...Import.fromLineAndSymbol(line, symbol, lines))
+
+                    return result
+                }, [])
 
             result.push(...lineImports)
 
@@ -123,7 +167,7 @@ class Import {
                     this.isClassImport = true
                 }
 
-                result.usages.push(new ImportUsage(line, symbol))
+                result.usages.push(new ImportUsage(line, symbol, symbol.isParentClass))
             }
 
             return result
@@ -180,8 +224,13 @@ class Import {
         popup.style.position = 'absolute'
         popup.style.display = 'none'
         popup.style.border = '1px solid black'
-        popup.style.top = `${top + 10}px`
-        popup.style.left = `${left + 30}px`
+        if (this.isGrouped) {
+            popup.style.left = `${this.targetSymbol.domElement.getBoundingClientRect().right - 25}px`
+            popup.style.top = `${top + 16}px`
+        } else {
+            popup.style.left = `${left + 30}px`
+            popup.style.top = `${top}px`
+        }
         popup.style.background = 'rgba(256,256,256,1)'
         popup.style.maxHeight = '600px'
         popup.style.width = '900px'
@@ -192,21 +241,22 @@ class Import {
         this.usagesPopup = popup
         this.line.domElement.closest('body').appendChild(popup)
 
+        let hoverArea = this.isGrouped ? this.targetSymbol.domElement : this.line.domElement
 
         popup.addEventListener('mouseleave', () => {
             if (
                 !this.lockPopup
-                && event.toElement !== this.line.domElement
+                && event.toElement !== hoverArea
             ) {
                 this.hideUsagesPopup()
             }
         })
 
-        this.line.domElement.addEventListener('mouseover', () => {
+        hoverArea.addEventListener('mouseover', () => {
             this.showUsagesPopup()
         })
 
-        this.line.domElement.addEventListener('mouseleave', (event) => {
+        hoverArea.addEventListener('mouseleave', (event) => {
             if (
                 this.lockPopup
                 || !event.toElement
@@ -217,6 +267,7 @@ class Import {
             }
             this.hideUsagesPopup()
         })
+
 
         let lockButton = popup.querySelector('.lock-popup')
 
@@ -240,10 +291,6 @@ class Import {
             }
         }
 
-        lockButton.addEventListener('click', (event) => {
-            if (!event.target.matches('a *')) {
-                toggleLockPopup()
-            }
-        })
+        lockButton.addEventListener('click', toggleLockPopup)
     }
 }

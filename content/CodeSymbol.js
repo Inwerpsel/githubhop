@@ -23,7 +23,7 @@ class CodeSymbol {
         this.isAs = false
         this.isFunctionKeyword = false
         this.isConstKeyword = false
-        this.isParentClass = true
+        this.isParentClass = false
         this.isAnnotation = false
 
         if (this.text.match(/^[A-Z]+[a-z]\w*$/)) {
@@ -92,7 +92,7 @@ class CodeSymbol {
                 let lastElementIndex = symbols.length - 1
 
                 if (lastElementIndex > -1) {
-                    if (nextSymbol.text.match(/^\w+(\\\w+)*$/)) {
+                    if (nextSymbol.text.match(/^\w+(\\\w+)*(\\\{)?$/)) {
                         importTarget = nextSymbol
                         isImport = true
                     }

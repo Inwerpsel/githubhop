@@ -5,15 +5,29 @@ let sourceFile
 
     if (typeof member !== 'undefined') {
         console.log('start looking for' + member)
+        let targetLine
         let memberEscaped = member.replace(/\$/, '\\$')
         let memberRegex = new RegExp(
-            `((public |protected |private )(static )?\\$?|function |const )${memberEscaped}`
+            `((public |protected |private )(static )?\\$?|function |const )&?${memberEscaped}`
         )
 
         let matchingLine = [...document.querySelectorAll('[id^=LC]')].find(line=> line.textContent.match(memberRegex))
 
         if (typeof matchingLine !== 'undefined') {
-            window.location.hash = `#L${matchingLine.id.replace(/^LC/, '')}`
+            targetLine = matchingLine
+        } else {
+            // search for class line
+            targetLine = [...document.querySelectorAll('[id^=LC]')].find(line => line.textContent.match(
+                /(class|trait|interface) [A-Z]\w*/
+            ))
+
+        }
+
+        window.location.hash = `#L${targetLine.id.replace(/^LC/, '')}`
+
+        // change the hash back to the member to that it can be used when navigating to parent
+        if (typeof  matchingLine === 'undefined') {
+            window.location.hash = `#member=${member}`
         }
     }
 
