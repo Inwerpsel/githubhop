@@ -63,7 +63,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 let span = document.createElement('span')
                 let memberName = textNode.textContent.replace(/\(.*$/, '')
                 span.innerHTML = textNode.textContent
-                span.setAttribute('title', `${title} member ${memberName}`)
+                span.setAttribute('title', `${title}::${memberName}`)
                 // span.style.fontWeight = 700
                 span.style.cursor = 'help'
                 span.addEventListener('click', () => {
@@ -85,6 +85,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         fileImport.subImports.forEach(subImport => {
             // subImport.symbol.domElement.style.fontWeight = 700
             subImport.symbol.domElement.style.cursor = 'help'
+            subImport.symbol.domElement.title = `subImport: ${subImport.fqcn}`
             subImport.symbol.domElement.addEventListener('click', () => {
                 chrome.runtime.sendMessage({
                     message: 'import_clicked',
@@ -132,7 +133,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (inlineImport.targetSymbol) {
             // inlineImport.targetSymbol.domElement.style.fontWeight = '700'
             inlineImport.targetSymbol.domElement.style.cursor = 'help'
-            inlineImport.targetSymbol.domElement.title = 'inline import'
+            inlineImport.targetSymbol.domElement.title = 'inline import target'
             inlineImport.targetSymbol.domElement.addEventListener('click', clickListener)
         }
     })
@@ -156,6 +157,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         let isClass = isPastClass && line.getClassSymbol()
         isPastClass = isPastClass && isClass
         line.symbols.forEach((symbol) => {
+            if (symbol.isInlinePrefixed) {
+                return
+            }
             if (symbol.isFunction) {
                 // symbol.domElement.style.fontWeight = '700'
                 symbol.domElement.style.cursor = 'help'
@@ -217,7 +221,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 let span = document.createElement('span')
                 let memberName = textNode.textContent.replace(/\(.*$/, '')
                 span.innerHTML = textNode.textContent
-                span.setAttribute('title', `${namespacePart} member ${memberName}`)
+                span.setAttribute('title', `implicit ${namespacePart} member ${memberName}`)
                 // span.style.fontWeight = 700
                 span.style.cursor = 'help'
                 span.addEventListener('click', () => {
@@ -230,7 +234,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             // symbol.domElement.style.fontWeight = 700
             symbol.domElement.style.cursor = 'help'
-            symbol.domElement.title = namespacePart
+            symbol.domElement.title = 'implicit ' + namespacePart
             symbol.domElement.addEventListener('click', ()=> {ambiguousEventListener(false, symbol.isParentClass)})
         })
     })

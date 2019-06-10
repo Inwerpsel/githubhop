@@ -225,7 +225,7 @@ class Import {
         popup.style.display = 'none'
         popup.style.border = '1px solid black'
         if (this.isGrouped) {
-            popup.style.left = `${this.targetSymbol.domElement.getBoundingClientRect().right - 25}px`
+            popup.style.left = `${this.targetSymbol.domElement.getBoundingClientRect().left}px`
             popup.style.top = `${top + 16}px`
         } else {
             popup.style.left = `${left + 30}px`
@@ -261,6 +261,7 @@ class Import {
                 this.lockPopup
                 || !event.toElement
                 || event.toElement.className === 'usages-popup'
+                || event.toElement.className === 'lock-popup'
                 || popup.contains(event.toElement)
             ) {
                 return

@@ -77,7 +77,7 @@ class SourceFile {
             if (this.imports.length > 0) {
                 fromLineNumber = this.imports[this.imports.length - 1].line.number
             } else {
-                fromLineNumber = this.lines.find(line => line.classSymbol).number
+                fromLineNumber = this.lines.find(line => line.classSymbol).number - 1
             }
 
             this.linesAfterLastImport = this.lines.filter(

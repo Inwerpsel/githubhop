@@ -6,7 +6,7 @@ class CodeSymbol {
         'if', 'else', 'true', 'false', 'null', 'function', 'public', 'protected', 'extends', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as', 'instanceof', 'parent', 'foreach', 'for', 'use', 'break', 'continue', 'while', 'array', 'new', 'static', 'implements', 'abstract', 'switch', 'case', 'clone'
     ]
 
-    static selfReferences = ['self', 'static', '$this']
+    static selfReferences = ['self', 'static', '$this', 'parent']
 
     constructor (text, domElement, line, isImport, targetSymbol) {
         this.text = text
@@ -29,19 +29,16 @@ class CodeSymbol {
         if (this.text.match(/^[A-Z]+[a-z]\w*$/)) {
             this.isClassName = true
 
-        } else if (this.text.match(/\w+\\$/)) {
+        } else if (text.match(/\w+\\$/) && !text.match(/^\\/)) {
             this.isFolder = true
 
-        } else if (this.text === '->') {
+        } else if (text === '->') {
             this.isAccessor = true
 
-        } else if (this.text === '::') {
+        } else if (text === '::') {
             this.isStaticAccessor = true
 
         } else if (CodeSymbol.selfReferences.includes(this.text)) {
-            this.isSelf = true
-
-        } else if (this.text === 'self' || this.text === 'static' || this.text === '$this') {
             this.isSelf = true
 
         } else if (this.namespaceParts[0] === '') {
@@ -50,7 +47,7 @@ class CodeSymbol {
         // } else if (this.text === 'namespace') {
         //     this.isNamespaceSymbol = true
 
-        } else if (CodeSymbol.classTypes.includes(this.text)) {
+        } else if (CodeSymbol.classTypes.includes(text)) {
             this.isClassSymbol = true
 
         } else if (
