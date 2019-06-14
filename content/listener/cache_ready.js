@@ -130,11 +130,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         inlineImport.symbol.domElement.addEventListener('click', clickListener)
 
-        if (inlineImport.targetSymbol) {
+        if (inlineImport.symbol.targetSymbol) {
             // inlineImport.targetSymbol.domElement.style.fontWeight = '700'
-            inlineImport.targetSymbol.domElement.style.cursor = 'help'
-            inlineImport.targetSymbol.domElement.title = 'inline import target'
-            inlineImport.targetSymbol.domElement.addEventListener('click', clickListener)
+            inlineImport.symbol.targetSymbol.domElement.style.cursor = 'help'
+            inlineImport.symbol.targetSymbol.domElement.title = 'inline import'
+            inlineImport.symbol.targetSymbol.domElement.addEventListener('click', clickListener)
         }
     })
 

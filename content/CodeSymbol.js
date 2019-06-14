@@ -3,7 +3,7 @@ class CodeSymbol {
 
     static reservedKeywords = [
         ...CodeSymbol.classTypes,
-        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'protected', 'extends', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as', 'instanceof', 'parent', 'foreach', 'for', 'use', 'break', 'continue', 'while', 'array', 'new', 'static', 'implements', 'abstract', 'switch', 'case', 'clone'
+        'if', 'else', 'true', 'false', 'null', 'function', 'public', 'protected', 'extends', 'static', 'private', 'return', 'const', 'bool', 'int', 'string', 'as', 'instanceof', 'parent', 'foreach', 'for', 'use', 'break', 'continue', 'while', 'array', 'new', 'static', 'implements', 'abstract', 'switch', 'case', 'clone', 'try', 'catch', 'finally', 'throw'
     ]
 
     static selfReferences = ['self', 'static', '$this', 'parent']
@@ -144,19 +144,25 @@ class CodeSymbol {
                 symbol.isSelf = false
             }
 
-            if (symbol.isAnnotation) {
+            if ( symbol.isAnnotation) {
                 let annotationElement = symbol.domElement.querySelector('span.pl-k')
 
-                if (annotationElement) {
+                if (annotationElement && !['@author'].includes(annotationElement.innerHTML)) {
 
                     let textNode = annotationElement.nextSibling
 
                     if (textNode) {
                         let parts = textNode.textContent.trim().split(/[ |]+/)
-                        let annotationBodySymbols = parts.reduce((annotationBody, part) => {
 
-                            // don't add symbols for non-classes
-                            if (!part.match(/^\\?[A-Z]\w+/) && !CodeSymbol.selfReferences.includes(part)) {
+                        let annotationBodySymbols = parts.reduce((annotationBody, part) => {
+                            // don't add symbols for non-classes and exclude some common uppercase words
+                            if (
+                                (
+                                    !part.match(/^\\?[A-Z]\w+/)
+                                    && !CodeSymbol.selfReferences.includes(part)
+                                )
+                                || ['The', 'This', 'For'].includes(part)
+                            ) {
                                 return annotationBody
                             }
 
@@ -165,7 +171,7 @@ class CodeSymbol {
 
                             let textNodeParts = textNode.textContent.split(part)
                             let newTextNodeFirst = document.createTextNode(textNodeParts[0])
-                            let newTextNodeLast = document.createTextNode(textNodeParts.slice(1).join())
+                            let newTextNodeLast = document.createTextNode(textNodeParts.slice(1).join(part))
 
                             textNode.parentNode.insertBefore(newTextNodeFirst, textNode)
                             textNode.parentNode.insertBefore(span, textNode)
